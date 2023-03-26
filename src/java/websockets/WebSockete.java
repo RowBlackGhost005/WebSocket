@@ -8,6 +8,7 @@ package websockets;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import domain.Cancion;
 import domain.Message;
 import java.io.IOException;
 import java.util.Collections;
@@ -78,12 +79,24 @@ public class WebSockete {
         JsonObject messageJson = new Gson().fromJson(receivedMessage, JsonObject.class);
         String sendTo = messageJson.get("to").getAsString();
         String messageText = messageJson.get("message").getAsString();
+        String messageType = messageJson.get("type").getAsString();
+        
+        String command = null;
+        
+        if(messageType.equalsIgnoreCase("msg")){
+            command = "add:msg";
+        }else if(messageType.equalsIgnoreCase("jsn")){
+            command = "add:obj";
+
+            Cancion cancion = gson.fromJson(messageText, Cancion.class);
+            messageText = gson.toJson(cancion);
+        }
         
         if(sendTo.equalsIgnoreCase("All")){
-            message = new Message(sesion.getId() , "add:msg" , sesion.getId() + ": " + messageText);
+            message = new Message(sesion.getId() , command , sesion.getId() + ": " + messageText);
             sendMessageAllClients(message, sesion);
         }else{
-            message = new Message(sesion.getId() , "add:msg" , "[Privado] " + sesion.getId() + ": " + messageText);
+            message = new Message(sesion.getId() , command , "[Privado] " + sesion.getId() + ": " + messageText);
             sendMessageSingleClient(message, getOnlineClient(sendTo));
         }
         

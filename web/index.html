@@ -10,6 +10,24 @@ and open the template in the editor.
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         
+        <style>
+        table {
+          font-family: arial, sans-serif;
+          border-collapse: collapse;
+          width: 50%;
+        }
+
+        td, th {
+          border: 1px solid #dddddd;
+          text-align: left;
+          padding: 8px;
+        }
+
+        tr:nth-child(even) {
+          background-color: #dddddd;
+        }
+        </style>
+
         <script>
             //Array de clientes conectados
             const onlineClients = new Array();
@@ -32,16 +50,43 @@ and open the template in the editor.
 
             }
             
+                function isJson(item) {
+                    let value = typeof item !== "string" ? JSON.stringify(item) : item;    
+                    try {
+                        value = JSON.parse(value);
+                    } catch (e) {
+                        return false;
+                    }
+    
+                    return typeof value === "object" && value !== null;
+                }
+            
             function sendMessageAll(messageToSend){
-                let message = {to: "All" , message: messageToSend};
-                ws.send(JSON.stringify(message));
-                txtMsjs.value += "\n"+"YO: "+txtMsj.value;
+                
+                if(isJson(messageToSend) === true){
+                    let message = {to:"All" , message: messageToSend , type:"jsn"};
+                    ws.send(JSON.stringify(message));
+                    txtMsjs.value += "\n"+"YO: "+txtMsj.value;
+                    
+                }else{
+                    let message = {to: "All" , message: messageToSend , type:"msg"};
+                    ws.send(JSON.stringify(message));
+                    txtMsjs.value += "\n"+"YO: "+txtMsj.value;
+                }
             }
             
             function sendMessageSingle(messageToSend , user){
-                let message = {to: user , message: messageToSend};
-                ws.send(JSON.stringify(message));
-                txtMsjs.value += "\n"+"YO " + "-> " + user + ": "+ txtMsj.value;
+                
+                if(isJson(messageToSend) === true){
+                    let message = {to:user, message: messageToSend , type:"jsn"};
+                    ws.send(JSON.stringify(message));
+                    txtMsjs.value += "\n"+"YO: "+txtMsj.value;
+                    
+                }else{
+                    let message = {to: user , message: messageToSend , type:"msg"};
+                    ws.send(JSON.stringify(message));
+                    txtMsjs.value += "\n"+"YO: "+txtMsj.value;
+                }
             }
             
             //al cargarse la página se ejecuta esta función
@@ -61,7 +106,7 @@ and open the template in the editor.
 		//la función que se ejecuta al abrirse la conexión
                ws.onopen = function() {
                    //se envía este mensaje al websocket
-                    let message = {to: "All" , message: "Me conecte"};
+                    let message = {to: "All" , message: "Me conecte" , type:"msg"};
                     ws.send(JSON.stringify(message));
                    txtMsjs.value = "YO: Me conecte";
                };
@@ -100,6 +145,9 @@ and open the template in the editor.
                            break;
                        case 'add:uid':
                            setUserId(message);
+                           break;
+                       case 'add:obj':
+                           addObject(message);
                            break;
                    }
                }
@@ -150,6 +198,30 @@ and open the template in the editor.
                    userIdLabel.innerHTML = userId;
                }
                
+               function addObject(cancion){
+                   addMessage(cancion);
+                   
+                   var json = cancion.substring(cancion.indexOf("{") , cancion.length);
+                   var cancion = JSON.parse(json);
+                   
+                   var nombreCancion = cancion['nombre'];
+                   var autorCancion = cancion['autor'];
+                   
+                   var tablaCanciones = document.getElementById("tablaCanciones");
+                   var tableRow = document.createElement("tr");
+                   var celdaNombre = document.createElement("td");
+                   var celdaAutor = document.createElement("td");
+                   
+                   tablaCanciones.appendChild(tableRow);
+                   tableRow.appendChild(celdaNombre);
+                   tableRow.appendChild(celdaAutor);
+                   
+                   celdaNombre.innerHTML = nombreCancion;
+                   celdaAutor.innerHTML = autorCancion;
+               }
+               
+
+               
             };
         </script>
     </head>
@@ -187,6 +259,17 @@ and open the template in the editor.
         <br/><br/>        
         
         <p>Mensajes:</p>
-        <textarea id="txtMsjs"></textarea>        
+        <textarea id="txtMsjs"></textarea>  
+        
+        <div>
+            <h2>Canciones Recibidas</h2>
+            
+            <table id="tablaCanciones">
+                <tr>
+                    <th>Nombre</th>
+                    <th>Autor</th>
+                </tr>
+            </table>
+        </div>
     </body>
 </html>
